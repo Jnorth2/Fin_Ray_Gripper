@@ -37,7 +37,7 @@ low_torque = 0.05
 # Set velocity ramp input mode
 axis.controller.config.vel_limit = 20
 axis.controller.config.input_mode = INPUT_MODE_VEL_RAMP
-axis.controller.config.vel_ramp_rate = 10  # Acceleration rate in counts/s^2
+axis.controller.config.vel_ramp_rate = 5  # Acceleration rate in counts/s^2
 axis.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 
 # Helper function to hold position
@@ -58,7 +58,7 @@ def hold_torque(torque):
 def run_motor(direction):
     axis.controller.config.input_mode = INPUT_MODE_VEL_RAMP
     axis.controller.config.control_mode = CONTROL_MODE_VELOCITY_CONTROL
-    axis.controller.config.vel_ramp_rate = 10  # Acceleration rate in counts/s^2 
+    axis.controller.config.vel_ramp_rate = 5  # rev/s^2
     axis.controller.input_vel = direction * velocity
 
     print(f"Accelerating in direction {direction}")
