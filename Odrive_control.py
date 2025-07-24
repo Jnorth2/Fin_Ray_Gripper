@@ -20,8 +20,8 @@ velocity = 25     # Target velocity in counts/s
 current_threshold = 3.0  # Current threshold in Amps
 back_A_thresh = 1.0
 for_A_thresh = 3.0
-accel = 90 # 100 is too fast
-deccel = 90
+accel = 80 #80 is around 80% no error state/no encoder slipping state. 
+deccel = 80
 
 #R60 Parameters
 rated_torque = 0.75 #Nm
@@ -30,7 +30,7 @@ cont_A = 9 #A
 peak_A = 28 #A
 kt = 0.083 #Nm/A  Actual kt may be closer to 0.07143
 kv = 115 #RPM/V Actual kv maybe closer to 133
-v_limit = 30 #max = Voltage * kv * 0.78 ~ 35.7 @ 24 v 
+v_limit = 35 #max = Voltage * kv * 0.78 ~ 35.7 @ 24 v 
 V_gain = 0.0325 #micro=0.055
 pos_gain = 7 #micro=7 S1=28
 V_integral_gain = 0.0589 #micro=0.025
@@ -88,10 +88,18 @@ def go_back(axis, pos):
     axis.trap_traj.config.decel_limit = deccel
     axis.controller.input_pos = pos
     print(axis.pos_estimate, pos)
+    max_vel = 0
+    max_current = 0
     while True:
         pos_estimate = axis.pos_estimate
+        current = axis.motor.foc.Iq_measured
+        vel_estimate = axis.vel_estimate
+        max_vel = max(max_vel, abs(vel_estimate))
+        max_current = max(max_current, abs(current))
         pos_error = abs(pos - pos_estimate)
+        #print(f"position error: {pos_error}, Current: {current}, Velocity: {vel_estimate}")
         if pos_error < 0.015:  # Adjust this threshold as needed
+            print(f"Max Velocity: {max_vel} | Max Current: {max_current:.10f}")
             print("Motion complete.")
             break
 
@@ -201,6 +209,7 @@ try:
         elif user_input == 'exit':
             print("Exiting script")
             idle(axis)
+            odrv.reboot()
             break
         elif user_input == "torq":
             while True:
