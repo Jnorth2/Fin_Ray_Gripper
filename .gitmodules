@@ -1,0 +1,10 @@
+[submodule "src/Submodules/gripper_firmware"]
+	path = src/Submodules/gripper_firmware
+	url = git@github.com:Jnorth2/suction-gripper.git
+	branch = fin_ray_gripper
+[submodule "src/Submodules/apple-harvest"]
+	path = src/Submodules/apple-harvest
+	url = git@github.com:Jnorth2/apple-harvest.git
+[submodule "src/Submodules/apple_gripper"]
+	path = src/Submodules/apple_gripper
+	url = git@github.com:Jnorth2/apple_gripper.git
