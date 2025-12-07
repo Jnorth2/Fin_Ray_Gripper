@@ -3,3 +3,6 @@ build
 log
 install
 data
+__pycache__
+*.pyc
+*.pyo

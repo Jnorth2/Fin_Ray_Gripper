@@ -4,6 +4,10 @@ from rclpy.node import Node
 from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import Pose, Point, Quaternion
 import math
+import time
+
+ACC_THRESH = 0.5  # adjust this to what "noise" looks like
+TIMEOUT_THRESH = 0.3 #stop moving if acceleration = 0 within this time
 
 class IMUDeadReckoner:
     # state for a single IMU
@@ -14,6 +18,7 @@ class IMUDeadReckoner:
         self.vx = self.vy = self.vz = 0.0
         self.roll = self.pitch = self.yaw = 0.0
         self.data = None
+        self.last_nonzero_time = time.time()
 
 class DeadReckoningNode(Node): # for all 3 IMUs
     def __init__(self):
@@ -47,11 +52,18 @@ class DeadReckoningNode(Node): # for all 3 IMUs
             if dr.data is None:
                 continue
             self.update_single(dr)
-            # print(f"KEY: {self.pub[key]}")
             self.publish_pose(dr, self.pub[key])
 
     def update_single(self, dr: IMUDeadReckoner):
         ax, ay, az, roll, pitch, yaw = dr.data
+        if abs(ax) < ACC_THRESH:
+            ax = 0.0
+        if abs(ay) < ACC_THRESH:
+            ay = 0.0
+        if abs(az) < ACC_THRESH:
+            az = 0.0
+        if ax != 0 or ay != 0 or az != 0:
+            dr.last_nonzero_time = time.time()
         dr.roll = roll
         dr.pitch = pitch
         dr.yaw = yaw
@@ -73,6 +85,10 @@ class DeadReckoningNode(Node): # for all 3 IMUs
         dr.vx += ax_w * self.dt
         dr.vy += ay_w * self.dt
         dr.vz += az_w * self.dt
+        if (time.time() - dr.last_nonzero_time ) > TIMEOUT_THRESH:
+            dr.vx = 0
+            dr.vy = 0
+            dr.vz = 0
 
         # integrate position
         dr.x += dr.vx * self.dt
@@ -80,16 +96,15 @@ class DeadReckoningNode(Node): # for all 3 IMUs
         dr.z += dr.vz * self.dt
 
     def publish_pose(self, dr: IMUDeadReckoner, pub):
-        # print(f"dr: {dr.x}")
         pose = Pose()
         [pose.position.x, pose.position.y, pose.position.z] = [dr.x, dr.y, dr.z]
         # convert roll/pitch/yaw to quaternion, for Pose message
-        cy = math.cos(dr.yaw * 0.5)
-        sy = math.sin(dr.yaw * 0.5)
-        cp = math.cos(dr.pitch * 0.5)
-        sp = math.sin(dr.pitch * 0.5)
-        cr = math.cos(dr.roll * 0.5)
-        sr = math.sin(dr.roll * 0.5)
+        cy = math.cos(math.radians(dr.yaw) * 0.5)
+        sy = math.sin(math.radians(dr.yaw) * 0.5)
+        cp = math.cos(math.radians(dr.pitch) * 0.5)
+        sp = math.sin(math.radians(dr.pitch )* 0.5)
+        cr = math.cos(math.radians(dr.roll )* 0.5)
+        sr = math.sin(math.radians(dr.roll) * 0.5)
         pose.orientation = Quaternion(
             x=sr * cp * cy - cr * sp * sy,
             y=cr * sp * cy + sr * cp * sy,
@@ -97,7 +112,6 @@ class DeadReckoningNode(Node): # for all 3 IMUs
             w=cr * cp * cy + sr * sp * sy,
         )
         pub.publish(pose)
-        # print(pose)
 
 
 def main(args=None):
@@ -110,3 +124,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
